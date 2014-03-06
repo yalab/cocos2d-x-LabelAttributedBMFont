@@ -6,6 +6,11 @@
 
 強調キーワードの設定も可能(複数可)
 
+大元は[コチラ](http://survive-engineer.hatenablog.com/entry/2014/02/13/013103)
+これを元にcocos2d-x v3.0用に書き換え、自分用に幾つか機能の追加＆削除
+
+お気に召したら是非使ってみて(テストしてｗ)ください〜  
+そして何かアレば、コメントなり[@AnzNetJp](https://twitter.com/AnzNetJp)にリプなりくださいな
 
 # 簡単に使い方
 
