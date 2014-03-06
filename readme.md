@@ -19,7 +19,7 @@
     pages.push_back("あいうえおー\nかきくけこー");
     pages.push_back("さしすせそー");
     
-    auto label = LabelAttributedBMFont::create(lines, "hoge.fnt");
+    auto label = LabelAttributedBMFont::create(pages, "hoge.fnt");
     
     /*
     普通に文字列でもok
