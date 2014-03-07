@@ -83,6 +83,10 @@ bool LabelAttributedBMFont::initWithPages(const std::vector< std::string > &page
 
 void LabelAttributedBMFont::start()
 {
+    if (m_dispSpeed == 0) {
+        dispAllCharacters();
+        return;
+    }
     scheduleUpdate();
 }
 

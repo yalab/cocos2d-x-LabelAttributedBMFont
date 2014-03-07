@@ -4,6 +4,7 @@
  * 検証バージョン cocos2d-x v3.0 beta2
  *
  * 更新履歴
+ * 2014.03.07  DisplaySpeedプロパティに0を設定した場合は一括表示するようにしました
  * 2014.03.06  追加
  * 
  */
@@ -30,7 +31,7 @@ public:
     // 何フレーム周期で文字送りをするか
     CC_SYNTHESIZE(unsigned int, m_dispCycle, DispCycle);
     
-    // 文字送りする際は何文字ずつ行うか
+    // 文字送りする際は何文字ずつ行うか (0を設定した場合は常に一括表示に。ただしページ送りやキーワード強調は有効)
     CC_SYNTHESIZE(unsigned int, m_dispSpeed, DispSpeed)
     
     // 文字送りが完了状態かどうか
