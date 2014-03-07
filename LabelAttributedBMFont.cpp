@@ -106,6 +106,11 @@ void LabelAttributedBMFont::setCallback(const std::function<void (cocos2d::Objec
     m_callback = callback;
 }
 
+void LabelAttributedBMFont::setCallbackChangedPage(const std::function<void (int)> &callback)
+{
+    m_callbackChangedPage = callback;
+}
+
 bool LabelAttributedBMFont::onTouchBegan(cocos2d::Touch *touch, cocos2d::Event *event)
 {
     return true;
@@ -132,6 +137,12 @@ void LabelAttributedBMFont::onTouchEnded(cocos2d::Touch *touch, cocos2d::Event *
         return;
     }
     setString(*m_iterator, true);
+    
+    if (m_callbackChangedPage) {
+        auto dif = m_iterator - m_pages.begin();
+        m_callbackChangedPage(dif);
+    }
+    
     start();
 }
 

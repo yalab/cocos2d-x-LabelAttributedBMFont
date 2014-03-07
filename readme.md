@@ -35,6 +35,13 @@
     label->setCallback([](Object *sender){
       // 処理記述
     });
+	
+	// コールバック設定その２(ページ送りするたびに呼ばれる)
+	// もどってくる値はpagesのindex
+	label->setCallbackChangedPage([](int index) {
+		// indexから現在何が表示されているのか判定して何か処理
+		// ページ送りされたらなので、indexは1から(2ページ目からしかこない)
+	});
     
 	// 文字送りしない場合(ページ送りとキーワード強調は有効にしたい場合)
 	// label->setDispSpeed(0);

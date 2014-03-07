@@ -4,6 +4,7 @@
  * 検証バージョン cocos2d-x v3.0 beta2
  *
  * 更新履歴
+ * 2014.03.08  ページ送りのコールバックを追加。
  * 2014.03.07  DisplaySpeedプロパティに0を設定した場合は一括表示するようにしました
  * 2014.03.06  追加
  * 
@@ -77,12 +78,14 @@ public:
     virtual void onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event);
     void setPages(std::vector< std::string > &pages);
     void setCallback( const std::function<void(cocos2d::Object*)> &callback );
+    void setCallbackChangedPage( const std::function<void( int )> &callback );
     
 protected:
     
     std::vector< std::string > m_pages;
     std::vector< std::string >::iterator m_iterator;
-    cocos2d::ccMenuCallback m_callback;
+    std::function<void(Object*)>  m_callback;
+    std::function<void(int)>  m_callbackChangedPage;
     std::list< int > m_availableIndex;
     
 private:
