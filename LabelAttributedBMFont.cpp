@@ -7,8 +7,13 @@ using namespace std;
 #define NULL_CHAR       ""
 
 
-LabelAttributedBMFont::LabelAttributedBMFont()
+LabelAttributedBMFont::LabelAttributedBMFont(cocos2d::FontAtlas *atlas,
+                                             cocos2d::TextHAlignment alignment,
+                                             bool useDistanceField,
+                                             bool useA8Shader)
+:Label::Label(atlas, alignment, useDistanceField, useA8Shader)
 {
+    
 }
 
 LabelAttributedBMFont::~LabelAttributedBMFont()
@@ -16,59 +21,46 @@ LabelAttributedBMFont::~LabelAttributedBMFont()
     log("LabelAttributedBMFont ~LabelAttributedBMFont()");
 }
 
-LabelAttributedBMFont* LabelAttributedBMFont::create(const char *str, const char *fntFile, float width, TextHAlignment alignment)
+LabelAttributedBMFont* LabelAttributedBMFont::createWithBMFont(const std::string& bmfontFilePath, const std::string &text,
+                                                               const cocos2d::TextHAlignment& alignment, int lineWidth,
+                                                               const cocos2d::Point& imageOffset)
 {
-	return LabelAttributedBMFont::create(str, fntFile, width, alignment, Point::ZERO);
-}
-
-LabelAttributedBMFont* LabelAttributedBMFont::create(const char *str, const char *fntFile, float width)
-{
-    return LabelAttributedBMFont::create(str, fntFile, width, TextHAlignment::LEFT, Point::ZERO);
-}
-
-LabelAttributedBMFont* LabelAttributedBMFont::create(const char *str, const char *fntFile)
-{
-    return LabelAttributedBMFont::create(str, fntFile, kCCLabelAutomaticWidth, TextHAlignment::LEFT, Point::ZERO);
-}
-
-LabelAttributedBMFont* LabelAttributedBMFont::create(const char *str, const char *fntFile, float width, cocos2d::TextHAlignment alignment, cocos2d::Point imageOffset)
-{
-    vector< string > pages;
-    pages.push_back(str);
-    return LabelAttributedBMFont::create(pages, fntFile, width, alignment, imageOffset);
-}
-
-LabelAttributedBMFont* LabelAttributedBMFont::create(std::vector<std::string> &pages, const char *fntFile)
-{
-    return LabelAttributedBMFont::create(pages, fntFile, kCCLabelAutomaticWidth, TextHAlignment::LEFT, Point::ZERO);
-}
-
-LabelAttributedBMFont* LabelAttributedBMFont::create(std::vector<std::string> &pages, const char *fntFile, float width, cocos2d::TextHAlignment alignment, cocos2d::Point imageOffset)
-{
-    LabelAttributedBMFont* pRet = new LabelAttributedBMFont();
+    vector< string >pages;
+    pages.push_back(text);
     
-    if (pRet && pRet->initWithPages(pages, fntFile, width, alignment, imageOffset)) {
-        pRet->autorelease();
-        return pRet;
-    }
-    delete pRet;
-    return NULL;
+    return LabelAttributedBMFont::createWithBMFont(bmfontFilePath, pages, alignment, lineWidth, imageOffset);
 }
 
-bool LabelAttributedBMFont::initWithPages(const std::vector< std::string > &pages, const std::string& fntFile, float width, cocos2d::TextHAlignment alignment, cocos2d::Point imageOffset)
+LabelAttributedBMFont* LabelAttributedBMFont::createWithBMFont(const std::string& bmfontFilePath, std::vector< std::string > pages,
+                                                               const cocos2d::TextHAlignment& alignment, int lineWidth,
+                                                               const cocos2d::Point& imageOffset)
 {
-    for (int i = 0; i < pages.size(); i++) {
-        m_pages.push_back(pages[i]);
-    }
-    m_iterator = m_pages.begin();
+    LabelAttributedBMFont *ret = new LabelAttributedBMFont(nullptr, alignment);
     
-    if (! LabelBMFont::initWithString(*m_iterator, fntFile, width, alignment, imageOffset)) {
-        return false;
-    }
+    if (!ret)
+        return nullptr;
     
+    if (ret->setBMFontFilePath(bmfontFilePath, imageOffset))
+    {
+        ret->setMaxLineWidth(lineWidth);
+        ret->initWithPages(pages);
+        ret->autorelease();
+        return ret;
+    }
+    else
+    {
+        delete ret;
+        return nullptr;
+    }
+}
+
+void LabelAttributedBMFont::initWithPages(const std::vector< std::string > &pages/*, const std::string& fntFile, float width, cocos2d::TextHAlignment alignment, cocos2d::Point imageOffset*/)
+{
 	m_dispSpeed = 1;
 	m_dispCycle = 5;
 	m_isAllCharDisplayed = false;
+    
+    setPages(pages);
     
     // touch event
     auto listner = EventListenerTouchOneByOne::create();
@@ -76,8 +68,6 @@ bool LabelAttributedBMFont::initWithPages(const std::vector< std::string > &page
     listner->onTouchBegan = CC_CALLBACK_2(LabelAttributedBMFont::onTouchBegan, this);
     listner->onTouchEnded = CC_CALLBACK_2(LabelAttributedBMFont::onTouchEnded, this);
     getEventDispatcher()->addEventListenerWithSceneGraphPriority(listner, this);
-    
-    return true;
     
 }
 
@@ -87,21 +77,22 @@ void LabelAttributedBMFont::start()
         dispAllCharacters();
         return;
     }
+    m_isAllCharDisplayed = false;
     scheduleUpdate();
 }
 
-void LabelAttributedBMFont::setPages(std::vector<std::string> &pages)
+void LabelAttributedBMFont::setPages(const std::vector<std::string> &pages)
 {
     m_pages.clear();
     for (int i = 0; i < pages.size(); i++) {
         m_pages.push_back(pages[i]);
     }
     m_iterator = m_pages.begin();
-    setString(*m_iterator, true);
-    start();
+    
+    setString("", true);
 }
 
-void LabelAttributedBMFont::setCallback(const std::function<void (cocos2d::Object *)> &callback)
+void LabelAttributedBMFont::setCallback(const std::function<void (cocos2d::Ref *)> &callback)
 {
     m_callback = callback;
 }
@@ -109,6 +100,18 @@ void LabelAttributedBMFont::setCallback(const std::function<void (cocos2d::Objec
 void LabelAttributedBMFont::setCallbackChangedPage(const std::function<void (int)> &callback)
 {
     m_callbackChangedPage = callback;
+}
+
+void LabelAttributedBMFont::setString(const std::string &text, bool isRest)
+{
+    Label::setString(text);
+    if (! isRest) {
+        return;
+    }
+    resetCurrentString();
+    m_isAllCharDisplayed = false;
+    searchKeywordsIndex(m_pages.at(m_iterator - m_pages.begin()));
+    
 }
 
 bool LabelAttributedBMFont::onTouchBegan(cocos2d::Touch *touch, cocos2d::Event *event)
@@ -136,7 +139,8 @@ void LabelAttributedBMFont::onTouchEnded(cocos2d::Touch *touch, cocos2d::Event *
         if (m_callback) m_callback(this);
         return;
     }
-    setString(*m_iterator, true);
+    
+    setString("", true);    // 表示は初期化
     
     if (m_callbackChangedPage) {
         auto dif = m_iterator - m_pages.begin();
@@ -146,31 +150,65 @@ void LabelAttributedBMFont::onTouchEnded(cocos2d::Touch *touch, cocos2d::Event *
     start();
 }
 
-
-/**
- 引数の文字列のマルチバイトを考慮した文字長を取得する
- @param str 対象文字列
- @return 文字長
- */
-unsigned int getMuitiByteStringLength(const char *str)
+void LabelAttributedBMFont::updateColor()
 {
-	string targetStr = string(str);
-	int len = 0;
-	for (int i = 0; i < targetStr.length(); ) {
-		unsigned char code = str[i];
-		((code >= 0x81 && code <= 0x9F) || (code >= 0xe0 && code <= 0xfc)) ? i += 3 : i++;
-		len++;
-	}
-	return len;
+    if (nullptr == _textureAtlas)
+    {
+        return;
+    }
+    
+    Color4B color4( _displayedColor.r, _displayedColor.g, _displayedColor.b, _displayedOpacity );
+    
+    // special opacity for premultiplied textures
+    if (_isOpacityModifyRGB)
+    {
+        color4.r *= _displayedOpacity/255.0f;
+        color4.g *= _displayedOpacity/255.0f;
+        color4.b *= _displayedOpacity/255.0f;
+    }
+    
+    cocos2d::TextureAtlas* textureAtlas;
+    V3F_C4B_T2F_Quad *quads;
+    for (const auto& batchNode:_batchNodes)
+    {
+        
+        textureAtlas = batchNode->getTextureAtlas();
+        quads = textureAtlas->getQuads();
+        auto count = textureAtlas->getTotalQuads();
+        
+        for (int index = 0; index < count; ++index)
+        {
+            // 指定文字が強調色指定されているかどうか
+            if (m_colorsMatchingWord.find(index) != m_colorsMatchingWord.end()) {
+                auto customColor = Color4B( m_colorsMatchingWord.at(index) );
+                if (_isOpacityModifyRGB)
+                {
+                    customColor.r *= _displayedOpacity/255.0f;
+                    customColor.g *= _displayedOpacity/255.0f;
+                    customColor.b *= _displayedOpacity/255.0f;
+                }
+                quads[index].bl.colors = customColor;
+                quads[index].br.colors = customColor;
+                quads[index].tl.colors = customColor;
+                quads[index].tr.colors = customColor;
+            } else {
+                quads[index].bl.colors = color4;
+                quads[index].br.colors = color4;
+                quads[index].tl.colors = color4;
+                quads[index].tr.colors = color4;
+            }
+            textureAtlas->updateQuad(&quads[index], index);
+        }
+    }
 }
 
 /**
  文字色、文字サイズを局所的に変更したいキーワードを追加する
  @param keyword   キーワード
  @param fontColor キーワードの色
- @param fontScale キーワードのサイズ
+ @param fontScale キーワードのサイズ  廃止
  */
-void LabelAttributedBMFont::addKeyWord(string keyword, Color3B fontColor, float fontScale)
+void LabelAttributedBMFont::addKeyWord(string keyword, Color3B fontColor/*, float fontScale*/)
 {
 	// 改行コードの場合は何もしない
 	if (keyword == NEWLINE_CHAR) {
@@ -181,9 +219,12 @@ void LabelAttributedBMFont::addKeyWord(string keyword, Color3B fontColor, float 
 	KeywordDataSet dataset;
     dataset.word = keyword;
     dataset.strongColor = fontColor;
-    dataset.scaleTo = fontScale;
-    dataset.matchList.clear();
+    //    dataset.scaleTo = fontScale;      廃止
+    
     m_keyWords.push_back(dataset);
+    
+    // キーワードに該当する文字があるか検索
+    searchKeywordsIndex(*m_iterator);
 }
 
 /**
@@ -224,41 +265,11 @@ string replace(string &targetStr, string fromStr, string toStr)
 }
 
 /**
- ラベル上の文字色、文字サイズを初期化する
+ 検索情報初期化
  */
 void LabelAttributedBMFont::initKeyWordsVisualInfo()
 {
-    m_availableIndex.clear();
-    log("LabelAttributedBMFont : initKeyWordsVisualInfo()");
-    auto children = getChildren();
-    for (int i = 0; i < children.size(); i++) {
-        auto *mChar = (Sprite *)children.at(i);
-        
-        // ここで表示設定なのか非表示設定なのか判別しておく
-        // そしてちゃんと扱うべきtagを保持。
-        // じゃないと、文字数とか改行の数とか、内部で保持しているSpreiteの数とかで齟齬が生じる
-        // 文字数＝Spriteの数ではないので！
-        
-        if (! mChar->isVisible()) {
-            continue;
-        }
-        
-        m_availableIndex.push_back(mChar->getTag());      // 扱うべきtagを保持する！
-        mChar->setColor(Color3B::WHITE);
-		mChar->setScale(1.0f);
-		mChar->setVisible(false);
-        
-    }
-    
-    auto it = m_keyWords.begin();
-    while (it != m_keyWords.end()) {
-        auto &dataset = *it;
-        dataset.matchList.clear();
-        it++;
-    }
-    
-    m_availableIndex.sort();
-    m_isAllCharDisplayed = false;
+    m_colorsMatchingWord.clear();
 }
 
 /**
@@ -272,142 +283,86 @@ void LabelAttributedBMFont::dispAllCharacters()
     m_isAllCharDisplayed = true;
     unscheduleUpdate();
     
-    auto it = m_availableIndex.begin();
-    // 扱うべきidxリストから抽出して表示すること
-    // 考えずに全部表示すると、前回表示時に残ってるSpriteが表示されたりする
-    while (it != m_availableIndex.end()) {
-        auto *mChar = getChildByTag(*it);
-        mChar->setVisible(true);
-        it++;
-    }
+    auto line = *m_iterator;
+    setString(line, false);
 }
 
 /**
  キーワードの存在する位置を検出する
  */
-void LabelAttributedBMFont::searchKeywordsIndex()
+void LabelAttributedBMFont::searchKeywordsIndex(std::string targetString)
 {
-	// ラベル上に表示している文字列
-	string newStr = string(_initialStringUTF8);
-    
 	// 改行コードを除去
-	newStr = replace(newStr, NEWLINE_CHAR, NULL_CHAR);
+	targetString = replace(targetString, NEWLINE_CHAR, NULL_CHAR);
+    
+    if (targetString.empty()) {
+        return;
+    }
     
 	// 文字色、文字サイズを初期化
 	initKeyWordsVisualInfo();
-
+    
     auto it = m_keyWords.begin();
 	// 登録したキーワード分だけ検索処理を行う
     while (it != m_keyWords.end()) {
 		auto &dataset = *it;
         auto key = dataset.word;
-		unsigned int keyLengthMultiByte = getMuitiByteStringLength(key.c_str());     // キーワードの長さ(マルチバイト)
-		unsigned int searchIndex = 0;                                       // 現在の検出走査位置
-		unsigned int keyFindIndex = newStr.find(key, searchIndex);          // キーワードが検出された位置
-
+        unsigned int keyLengthMultiByte = cc_wcslen(cc_utf8_to_utf16(key.c_str()));     // キーワードの長さ(マルチバイト)
+		unsigned int searchIndex = 0;                                                   // 現在の検出走査位置
+		unsigned int keyFindIndex = targetString.find(key, searchIndex);                // キーワードが検出された位置
+        
 		while (keyFindIndex != string::npos) {
 			unsigned int keyFindIndexMultiByte = 0;                         // キーワードが検出された位置(マルチバイト)
 			// キーワードが検出された位置(マルチバイト)を検出
-			string clipStr = newStr.substr(0, keyFindIndex);
-			keyFindIndexMultiByte = getMuitiByteStringLength(clipStr.c_str());
+			string clipStr = targetString.substr(0, keyFindIndex);
+            keyFindIndexMultiByte = cc_wcslen(cc_utf8_to_utf16(clipStr.c_str()));
             
-            vector< unsigned int > list;
-            list.push_back(keyFindIndexMultiByte);  // 開始位置
-            list.push_back(keyLengthMultiByte);     // その長さ
-            dataset.addMatchList(list);
+            for (unsigned int i = 0; i < keyLengthMultiByte; i++) {
+                int index = keyFindIndexMultiByte + i;
+                m_colorsMatchingWord[index] = dataset.strongColor;
+            }
             
 			// 現在の検出走査位置をキーワード終了位置へ
 			searchIndex = (keyFindIndex + key.length());
             
 			// キーワード終了位置以降に存在するキーワードを検出
-			keyFindIndex = newStr.find(key, searchIndex);
+			keyFindIndex = targetString.find(key, searchIndex);
 		}
         
         it++;
 	}
-}
-
-
-/**
- ラベル上に該当するキーワードがあればキーワードの文字色、文字サイズを変更する
- */
-void LabelAttributedBMFont::updateKeyWordsVisualInfo()
-{
-    auto it = m_keyWords.begin();
-    
-    while (it != m_keyWords.end()) {
-        auto &dataset = *it;
-        auto it2 = dataset.matchList.begin();
-        while (it2 != dataset.matchList.end()) {
-            auto range = *it2;
-            int startIndex = range.at(0);
-            int length = range.at(1);
-            auto it3 = m_availableIndex.begin();
-            advance(it3, startIndex);
-            do {
-                auto mChar = (Sprite *)getChildByTag(*it3);
-                mChar->setColor(dataset.strongColor);
-                mChar->setScale(dataset.scaleTo);
-                
-                it3++;
-                length--;
-            } while (length > 0 && it3 != m_availableIndex.end());
-            
-            it2++;
-        }
-        
-        it++;
-    }
-}
-
-/**
- ラベルの更新
- */
-void LabelAttributedBMFont::updateLabel()
-{
-    
-	LabelBMFont::updateLabel();
-    
-	// キーワードの存在する位置を検出する
-	searchKeywordsIndex();
-    
-	// キーワードの文字色、文字サイズを更新
-	updateKeyWordsVisualInfo();
 }
 
 /**
  更新、文字送りを行う
+ 表示している文字インデックスを進めて、文字を再設定することで実現
  @param dt 前回コールされてからの経過時間
  */
 void LabelAttributedBMFont::update(float dt)
 {
-    if (m_availableIndex.size() == 0) {
+    
+    if (m_dispSpeed == 0) {
+        dispAllCharacters();
+        return;
+    }
+    
+    
+    auto line = m_pages.at(m_iterator - m_pages.begin());
+    auto utf16String = cc_utf8_to_utf16(line.c_str());
+    int len = cc_wcslen(utf16String);
+    int currentLen = getStringLength();
+    
+    if (currentLen >= len) {
+        m_isAllCharDisplayed = true;
         unscheduleUpdate();
         return;
     }
-
+    
 	if (Director::getInstance()->getTotalFrames() % m_dispCycle == 0) {
         
-		for (int i = 0; i < m_dispSpeed; i++) {
-            
-            auto tag = m_availableIndex.front();
-            m_availableIndex.pop_front();
-            Sprite *sprite = (Sprite *)getChildByTag(tag);
-            sprite->setVisible(true);
-
-		}
+        auto newLen = len < (currentLen + m_dispSpeed) ? len - currentLen : currentLen + m_dispSpeed;
+        auto newStr = cc_utf16_to_utf8(utf16String, newLen, nullptr, nullptr);
+        setString(newStr, false);
         
-        if (m_availableIndex.size() == 0) {
-            m_isAllCharDisplayed = true;
-            unscheduleUpdate();
-        }
-
 	}
 }
-
-
-int LabelAttributedBMFont::getStringLen()
-{
-    return _string ? cc_wcslen(_string) : 0;
-}
-

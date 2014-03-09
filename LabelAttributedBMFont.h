@@ -1,9 +1,11 @@
 /*
  * RPG風文字送り＆ページ送りをするラベル
  *
- * 検証バージョン cocos2d-x v3.0 beta2
+ * 検証バージョン cocos2d-x v3.0 rc
  *
  * 更新履歴
+ * 2014.03.10  cocos2d-x v3.0 rc 対応
+ *             キーワードの文字サイズ指定は機能廃止
  * 2014.03.08  ページ送りのコールバックを追加。
  * 2014.03.07  DisplaySpeedプロパティに0を設定した場合は一括表示するようにしました
  * 2014.03.06  追加
@@ -15,18 +17,18 @@
 struct KeywordDataSet {
     std::string word;
     cocos2d::Color3B strongColor;
-    float scaleTo;
-    std::vector < std::vector <unsigned int> > matchList;
-    void addMatchList( std::vector< unsigned int > var) {
-        matchList.push_back(var);
-    };
+    //    float scaleTo;    廃止
 };
 
-class LabelAttributedBMFont : public cocos2d::LabelBMFont
+class LabelAttributedBMFont : public cocos2d::Label
 {
     
 public:
-    LabelAttributedBMFont();
+    LabelAttributedBMFont(cocos2d::FontAtlas *atlas = nullptr,
+                          cocos2d::TextHAlignment alignment = cocos2d::TextHAlignment::LEFT,
+                          bool useDistanceField = false,
+                          bool useA8Shader = false);
+    
     virtual ~LabelAttributedBMFont();
     
     // 何フレーム周期で文字送りをするか
@@ -38,13 +40,14 @@ public:
     // 文字送りが完了状態かどうか
     CC_SYNTHESIZE(bool, m_isAllCharDisplayed, IsAllCharDisplayed);
     
+    
     /**
      文字色、文字サイズを局所的に変更したいキーワードを追加する
      @param keyword   キーワード
      @param fontColor キーワードの色
-     @param fontScale キーワードのサイズ
+     @param fontScale キーワードのサイズ  廃止
      */
-    void addKeyWord(std::string keyword, cocos2d::Color3B fontColor, float fontScale);
+    void addKeyWord(std::string keyword, cocos2d::Color3B fontColor/*, float fontScale*/);
     
     /**
      キーワードを削除する
@@ -57,56 +60,48 @@ public:
      */
     void dispAllCharacters();
     
-    /**
-     ラベルの更新
-     */
-    virtual void updateLabel();
-    
     virtual void update(float dt);
-
-    static LabelAttributedBMFont * create(const char *str, const char *fntFile, float width, cocos2d::TextHAlignment alignment, cocos2d::Point imageOffset);
-	static LabelAttributedBMFont * create(const char *str, const char *fntFile, float width, cocos2d::TextHAlignment alignment);
-	static LabelAttributedBMFont * create(const char *str, const char *fntFile, float width);
-	static LabelAttributedBMFont * create(const char *str, const char *fntFile);
-    static LabelAttributedBMFont * create(std::vector< std::string > &pages, const char *fntFile);
-    static LabelAttributedBMFont * create(std::vector< std::string > &pages, const char *fntFile, float width, cocos2d::TextHAlignment alignment, cocos2d::Point imageOffset);
     
-    virtual bool initWithPages(const std::vector< std::string > &pages, const std::string& fntFile, float width = cocos2d::kLabelAutomaticWidth, cocos2d::TextHAlignment alignment = cocos2d::TextHAlignment::LEFT, cocos2d::Point imageOffset = cocos2d::Point::ZERO);
+    static LabelAttributedBMFont* createWithBMFont(const std::string& bmfontFilePath, const std::string &text,
+                                                   const cocos2d::TextHAlignment& alignment = cocos2d::TextHAlignment::LEFT, int lineWidth = 0,
+                                                   const cocos2d::Point& imageOffset = cocos2d::Point::ZERO);
+    
+    static LabelAttributedBMFont* createWithBMFont(const std::string& bmfontFilePath, const std::vector< std::string > pages,
+                                                   const cocos2d::TextHAlignment& alignment = cocos2d::TextHAlignment::LEFT, int lineWidth = 0,
+                                                   const cocos2d::Point& imageOffset = cocos2d::Point::ZERO);
+    
+    virtual void initWithPages(const std::vector< std::string > &pages/*, const std::string& fntFile, float width = -1, cocos2d::TextHAlignment alignment = cocos2d::TextHAlignment::LEFT, cocos2d::Point imageOffset = cocos2d::Point::ZERO*/);
     void start();       // 文字送りスタート
     
     virtual bool onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event);
     virtual void onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event);
-    void setPages(std::vector< std::string > &pages);
-    void setCallback( const std::function<void(cocos2d::Object*)> &callback );
+    virtual void updateColor();
+    void setPages(const std::vector< std::string > &pages);
+    void setCallback( const std::function<void(cocos2d::Ref*)> &callback );
     void setCallbackChangedPage( const std::function<void( int )> &callback );
+    
+    virtual void setString(const std::string &text, bool isRest);
     
 protected:
     
     std::vector< std::string > m_pages;
     std::vector< std::string >::iterator m_iterator;
-    std::function<void(Object*)>  m_callback;
+    std::function<void(Ref*)>  m_callback;
     std::function<void(int)>  m_callbackChangedPage;
-    std::list< int > m_availableIndex;
+    std::map< int, cocos2d::Color3B > m_colorsMatchingWord;
     
 private:
     
     std::list< KeywordDataSet > m_keyWords;
-
+    
     /**
      キーワードの存在する位置を検出する
      */
-    void searchKeywordsIndex();
-    
-    /**
-     ラベル上に該当するキーワードがあればキーワードの文字色、文字サイズを変更する
-     */
-    void updateKeyWordsVisualInfo();
+    void searchKeywordsIndex(std::string targetString);
     
     /**
      ラベル上の文字色、文字サイズを初期化する
      */
     void initKeyWordsVisualInfo();
     
-    int getStringLen();
-
 };
