@@ -4,6 +4,7 @@
  * 検証バージョン cocos2d-x v3.0 rc
  *
  * 更新履歴
+ * 2014.03.17  cocos2d-x v3.0 rc0 対応
  * 2014.03.10  cocos2d-x v3.0 rc 対応
  *             キーワードの文字サイズ指定は機能廃止
  * 2014.03.08  ページ送りのコールバックを追加。
@@ -25,7 +26,8 @@ class LabelAttributedBMFont : public cocos2d::Label
     
 public:
     LabelAttributedBMFont(cocos2d::FontAtlas *atlas = nullptr,
-                          cocos2d::TextHAlignment alignment = cocos2d::TextHAlignment::LEFT,
+                          cocos2d::TextHAlignment hAlignment = cocos2d::TextHAlignment::LEFT,
+                          cocos2d::TextVAlignment vAlignment = cocos2d::TextVAlignment::TOP,
                           bool useDistanceField = false,
                           bool useA8Shader = false);
     

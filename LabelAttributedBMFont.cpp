@@ -8,10 +8,11 @@ using namespace std;
 
 
 LabelAttributedBMFont::LabelAttributedBMFont(cocos2d::FontAtlas *atlas,
-                                             cocos2d::TextHAlignment alignment,
+                                             cocos2d::TextHAlignment hAlignment,
+                                             cocos2d::TextVAlignment vAlignment,
                                              bool useDistanceField,
                                              bool useA8Shader)
-:Label::Label(atlas, alignment, useDistanceField, useA8Shader)
+:Label::Label(atlas, hAlignment, vAlignment, useDistanceField, useA8Shader)
 {
     
 }
@@ -108,7 +109,7 @@ void LabelAttributedBMFont::setString(const std::string &text, bool isRest)
     if (! isRest) {
         return;
     }
-    resetCurrentString();
+    updateContent();
     m_isAllCharDisplayed = false;
     searchKeywordsIndex(m_pages.at(m_iterator - m_pages.begin()));
     
