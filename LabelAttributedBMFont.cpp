@@ -1,7 +1,16 @@
+//
+//  LabelAttributedBMFont.cpp
+//  RouteRPG
+//
+//  Created by ANZ on 2014/02/28.
+//
+//
+
 #include "LabelAttributedBMFont.h"
 
 USING_NS_CC;
 using namespace std;
+
 
 #define NEWLINE_CHAR    "\n"
 #define NULL_CHAR       ""
@@ -65,7 +74,7 @@ void LabelAttributedBMFont::initWithPages(const std::vector< std::string > &page
     
     // touch event
     auto listner = EventListenerTouchOneByOne::create();
-    listner->setSwallowTouches(false);
+    listner->setSwallowTouches(true);
     listner->onTouchBegan = CC_CALLBACK_2(LabelAttributedBMFont::onTouchBegan, this);
     listner->onTouchEnded = CC_CALLBACK_2(LabelAttributedBMFont::onTouchEnded, this);
     getEventDispatcher()->addEventListenerWithSceneGraphPriority(listner, this);
@@ -74,6 +83,7 @@ void LabelAttributedBMFont::initWithPages(const std::vector< std::string > &page
 
 void LabelAttributedBMFont::start()
 {
+    unscheduleUpdate();
     if (m_dispSpeed == 0) {
         dispAllCharacters();
         return;
@@ -98,7 +108,7 @@ void LabelAttributedBMFont::setCallback(const std::function<void (cocos2d::Ref *
     m_callback = callback;
 }
 
-void LabelAttributedBMFont::setCallbackChangedPage(const std::function<void (int)> &callback)
+void LabelAttributedBMFont::setCallbackChangedPage(const std::function<void (long)> &callback)
 {
     m_callbackChangedPage = callback;
 }
@@ -109,7 +119,9 @@ void LabelAttributedBMFont::setString(const std::string &text, bool isRest)
     if (! isRest) {
         return;
     }
+    //    resetCurrentString();
     updateContent();
+    
     m_isAllCharDisplayed = false;
     searchKeywordsIndex(m_pages.at(m_iterator - m_pages.begin()));
     
@@ -308,15 +320,19 @@ void LabelAttributedBMFont::searchKeywordsIndex(std::string targetString)
     while (it != m_keyWords.end()) {
 		auto &dataset = *it;
         auto key = dataset.word;
-        unsigned int keyLengthMultiByte = cc_wcslen(cc_utf8_to_utf16(key.c_str()));     // キーワードの長さ(マルチバイト)
-		unsigned int searchIndex = 0;                                                   // 現在の検出走査位置
-		unsigned int keyFindIndex = targetString.find(key, searchIndex);                // キーワードが検出された位置
+        u16string u16key;
+        StringUtils::UTF8ToUTF16(key.c_str(), u16key);
+        unsigned int keyLengthMultiByte = u16key.length();     // キーワードの長さ(マルチバイト)
+		unsigned long searchIndex = 0;                                                   // 現在の検出走査位置
+		unsigned long keyFindIndex = targetString.find(key, searchIndex);                // キーワードが検出された位置
         
 		while (keyFindIndex != string::npos) {
 			unsigned int keyFindIndexMultiByte = 0;                         // キーワードが検出された位置(マルチバイト)
 			// キーワードが検出された位置(マルチバイト)を検出
 			string clipStr = targetString.substr(0, keyFindIndex);
-            keyFindIndexMultiByte = cc_wcslen(cc_utf8_to_utf16(clipStr.c_str()));
+            u16string u16ClipStr;
+            StringUtils::UTF8ToUTF16(clipStr, u16ClipStr);
+            keyFindIndexMultiByte = u16ClipStr.length();
             
             for (unsigned int i = 0; i < keyLengthMultiByte; i++) {
                 int index = keyFindIndexMultiByte + i;
@@ -349,8 +365,9 @@ void LabelAttributedBMFont::update(float dt)
     
     
     auto line = m_pages.at(m_iterator - m_pages.begin());
-    auto utf16String = cc_utf8_to_utf16(line.c_str());
-    int len = cc_wcslen(utf16String);
+    u16string u16Line;
+    StringUtils::UTF8ToUTF16(line.c_str(), u16Line);
+    int len = u16Line.length();
     int currentLen = getStringLength();
     
     if (currentLen >= len) {
@@ -359,11 +376,23 @@ void LabelAttributedBMFont::update(float dt)
         return;
     }
     
-	if (Director::getInstance()->getTotalFrames() % m_dispCycle == 0) {
-        
-        auto newLen = len < (currentLen + m_dispSpeed) ? len - currentLen : currentLen + m_dispSpeed;
-        auto newStr = cc_utf16_to_utf8(utf16String, newLen, nullptr, nullptr);
-        setString(newStr, false);
-        
-	}
+	if (Director::getInstance()->getTotalFrames() % m_dispCycle != 0) {
+        return;
+    }
+    
+    auto newLen = len < (currentLen + m_dispSpeed) ? len - currentLen : currentLen + m_dispSpeed;
+    std::u16string u16NewLine;
+    
+    for (int i = 0; i < newLen; ++i)
+    {
+        u16NewLine.push_back(u16Line[i]);
+    }
+    
+    string newStr;
+    StringUtils::UTF16ToUTF8(u16NewLine, newStr);
+    setString(newStr, false);
+    
+	
 }
+
+
