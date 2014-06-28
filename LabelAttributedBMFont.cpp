@@ -1,10 +1,4 @@
-//
-//  LabelAttributedBMFont.cpp
-//  RouteRPG
-//
-//  Created by ANZ on 2014/02/28.
-//
-//
+
 
 #include "LabelAttributedBMFont.h"
 
