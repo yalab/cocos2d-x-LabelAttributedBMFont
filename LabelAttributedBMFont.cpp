@@ -1,5 +1,4 @@
 
-
 #include "LabelAttributedBMFont.h"
 
 USING_NS_CC;
