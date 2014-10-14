@@ -21,11 +21,11 @@
     pages.push_back("あいうえおー\nかきくけこー");
     pages.push_back("さしすせそー");
     
-    auto label = LabelAttributedBMFont::create(pages, "hoge.fnt");
+    auto label = LabelAttributedBMFont::createWithBMFont("hoge.fnt", pages);
     
     /*
     普通に文字列でもok
-    auto label = LabelAttributedBMFont::create("ページ送りはないよー\n1ページだけだよー", "hoge.fnt");
+    auto label = LabelAttributedBMFont::createWithBMFont("hoge.fnt", "ページ送りはないよー\n1ページだけだよー");
     */
     
     // 強調キーワードを設定する場合
