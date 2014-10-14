@@ -81,8 +81,8 @@ public:
     virtual void updateColor();
     void setPages(const std::vector< std::string > &pages);
     void setCallback( const std::function<void(cocos2d::Ref*)> &callback );
-    void setCallbackChangedPage( const std::function<void( int )> &callback );
-    
+    void setCallbackChangedPage( const std::function<void(long)> &callback );
+
     virtual void setString(const std::string &text, bool isRest);
     
 protected:
